@@ -1245,6 +1245,7 @@ textarea {
   .app-main {
     flex: 1;
     min-height: 0;
+    min-width: 0;
   }
   .page {
     padding: 28px 40px 36px;
@@ -1256,6 +1257,7 @@ textarea {
     bottom: auto;
     left: auto;
     transform: none;
+    flex: none;
     width: 210px;
     height: 100vh;
     flex-direction: column;

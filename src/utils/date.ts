@@ -82,3 +82,27 @@ export function yearsBetween(startISO: string, endISO: string): number {
   }
   return years + (months + days / 30) / 12
 }
+
+/** 宽松解析多种日期写法为 YYYY-MM-DD；无法识别返回 null。
+ *  支持：2026-08-05 / 2026/8/5 / 2026.8.5 / 2026年8月5日 / 8/5/2026 / 2026-08-05 12:00:00 */
+export function parseDate(input: string | null | undefined): string | null {
+  if (input == null) return null
+  let s = String(input).trim()
+  if (!s) return null
+  // 去掉尾随时间部分
+  s = s.replace(/\s*\d{1,2}:\d{2}(?::\d{2})?(?:\.\d+)?\s*$/, '')
+  s = s.replace(/[日号]/g, '')
+  const toYMD = (y: number, m: number, d: number): string | null => {
+    if (m < 1 || m > 12 || d < 1 || d > 31) return null
+    const dt = new Date(y, m - 1, d)
+    if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null
+    return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  }
+  let m = s.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})/)
+  if (m) return toYMD(+m[1], +m[2], +m[3])
+  m = s.match(/^(\d{4})年(\d{1,2})月(\d{1,2})/)
+  if (m) return toYMD(+m[1], +m[2], +m[3])
+  m = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})/)
+  if (m) return toYMD(+m[3], +m[1], +m[2])
+  return null
+}

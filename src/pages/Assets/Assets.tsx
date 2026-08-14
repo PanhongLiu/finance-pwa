@@ -5,10 +5,10 @@ import { Icon } from '../../components/Icon'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { Sheet } from '../../components/Sheet'
 import { useFinance } from '../../store/FinanceContext'
-import { formatCNY, formatSignedCNY, toCents, formatYuan } from '../../utils/money'
-import { fmtMonthDay } from '../../utils/date'
+import { formatCNY, formatSignedCNY, toCents, formatYuan, parseAmountCents } from '../../utils/money'
+import { fmtMonthDay, parseDate, todayISO } from '../../utils/date'
 import { annualized, type PortfolioSummary } from '../../services/calc'
-import { bulkSavePositions } from '../../services/finance'
+import { importPositionsWithRecords } from '../../services/finance'
 import type { Position } from '../../types'
 
 type SortKey = 'project' | 'category' | 'app' | 'amount' | 'expiry' | 'gain' | 'ann' | 'date'
@@ -116,6 +116,25 @@ export function AssetsPage() {
   }
 
   // CSV 导入
+  // 表头同义词映射：外部表格常把「日期/金额/APP」写成不同名字，这里统一识别
+  const HEADER_KEYS = ['project', 'category', 'app', 'amount', 'expiry', 'gain', 'date'] as const
+  const HEADER_ALIASES: Record<string, string[]> = {
+    project: ['项目', '名称', '品名', '标的', 'product', 'name', 'item'],
+    category: ['分类', '类型', '类别', 'category', 'type'],
+    app: ['app', '平台', '账户', '银行', '渠道', 'bank'],
+    amount: ['当前金额', '金额', '本金', '余额', '市值', 'amount', 'principal', 'value', '现值'],
+    expiry: ['到期时间', '到期', '到期日', 'end', 'maturity', 'deadline'],
+    gain: ['距上次收益', '收益', '利息', 'gain', 'profit'],
+    date: ['更新日期', '日期', '时间', '存入日期', '记录日期', '记账日期', 'date', 'datetime', 'time']
+  }
+  function normHeader(s: string): string {
+    return s
+      .trim()
+      .toLowerCase()
+      .replace(/[()（）][^()（）]*/g, '') // 去括号及内部
+      .replace(/[\s/／]/g, '')
+  }
+
   function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -135,23 +154,38 @@ export function AssetsPage() {
   function parseCsv(text: string): Position[] {
     const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim())
     if (lines.length < 2) throw new Error('文件中没有可导入的数据行')
+    // 表头归一化匹配（支持多种表头写法：项目/名称、分类/类型、金额/本金、日期/时间…）
     const head = parseCsvLine(lines[0]).map((h) => h.trim())
     const idx: Record<string, number> = {}
-    head.forEach((h, i) => (idx[h] = i))
-    if (idx['项目'] == null || idx['分类'] == null) throw new Error('CSV 需包含「项目」「分类」列')
+    const used = new Set<string>()
+    for (let i = 0; i < head.length; i++) {
+      const nh = normHeader(head[i])
+      for (const key of HEADER_KEYS) {
+        if (used.has(key)) continue
+        if (HEADER_ALIASES[key].includes(nh)) {
+          idx[key] = i
+          used.add(key)
+          break
+        }
+      }
+    }
+    if (idx['project'] == null || idx['category'] == null) {
+      throw new Error('CSV 需包含「项目」和「分类」列（也支持 名称/类型 等同义表头）')
+    }
     const now = Date.now()
     const out: Position[] = []
     for (let i = 1; i < lines.length; i++) {
       const cells = parseCsvLine(lines[i])
-      const proj = (cells[idx['项目']] || '').trim()
-      const cat = (cells[idx['分类']] || '').trim()
-      const amt = Math.round(parseFloat(cells[idx['当前金额']] || '0') * 100)
+      const proj = (idx.project != null ? cells[idx.project] : '')?.trim() ?? ''
+      const cat = (idx.category != null ? cells[idx.category] : '')?.trim() ?? ''
+      const amt = idx.amount != null ? parseAmountCents(cells[idx.amount]) : 0
       if (!proj || !cat || !(amt >= 0)) continue
-      const gainRaw = cells[idx['距上次收益']]
-      const gain = gainRaw !== '' && gainRaw != null ? Math.round(parseFloat(gainRaw) * 100) : 0
-      const date = (cells[idx['更新日期']] || '').trim()
-      const expiry = (cells[idx['到期时间']] || '').trim()
-      const app = (cells[idx['APP']] || '').trim()
+      const gainRaw = idx.gain != null ? cells[idx.gain] : ''
+      const gain = gainRaw !== '' && gainRaw != null ? parseAmountCents(gainRaw) : 0
+      const rawDate = idx.date != null ? cells[idx.date] : ''
+      const date = (rawDate && parseDate(rawDate)) || todayISO()
+      const expiry = (idx.expiry != null ? cells[idx.expiry] : '')?.trim() ?? ''
+      const app = (idx.app != null ? cells[idx.app] : '')?.trim() ?? ''
       out.push({
         id: 'imp-' + now + '-' + i,
         project: proj,
@@ -161,8 +195,8 @@ export function AssetsPage() {
         prevAmount: amt - (gain > 0 ? gain : 0),
         lastGain: gain,
         gainType: gain !== 0 ? 'market' : 'base',
-        date: date || new Date().toISOString().slice(0, 10),
-        prevDate: date || new Date().toISOString().slice(0, 10),
+        date,
+        prevDate: date,
         note: '',
         expiry,
         ts: now,
@@ -214,9 +248,9 @@ export function AssetsPage() {
   }
 
   async function bulkImport(list: Position[]) {
-    await bulkSavePositions(list)
+    await importPositionsWithRecords(list)
     await reload()
-    alert(`已导入 ${list.length} 行（按 项目 + 分类 合并）`)
+    alert(`已导入 ${list.length} 行（按 项目 + 分类 合并，并同步更新月度趋势）`)
   }
 
   const summary = portfolioSummaryLocal(portfolio)

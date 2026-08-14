@@ -8,6 +8,17 @@ export function toCents(yuan: number | string): number {
   return Math.round((n + Number.EPSILON) * 100)
 }
 
+/** 宽松解析金额文本（去除 ¥ $ ￥ , 空格 等符号）为分；非法或为空返回 0。
+ *  用于 CSV 导入，支持 "¥1,234.50" / "1,234" / "1234.5" 等写法。 */
+export function parseAmountCents(input: string | number | null | undefined): number {
+  if (input == null) return 0
+  const s = String(input).trim().replace(/[¥$￥,\s]/g, '')
+  if (!s) return 0
+  const n = parseFloat(s)
+  if (!isFinite(n) || n < 0) return 0
+  return Math.round((n + Number.EPSILON) * 100)
+}
+
 /** 分 → 元（浮点，仅用于展示计算） */
 export function fromCents(cents: number): number {
   return cents / 100

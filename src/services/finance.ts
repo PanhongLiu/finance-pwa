@@ -287,6 +287,28 @@ export async function deletePosition(id: string): Promise<void> {
   })
 }
 
+/** CSV 导入：整体替换持仓，并同步重建月度趋势所需的流水
+ *  （按「项目 + 分类」为每条持仓写入一条 record，使存款汇总的月度趋势能正确反映导入数据）。 */
+export async function importPositionsWithRecords(positions: Position[]): Promise<void> {
+  const now = Date.now()
+  const records: DepositRecord[] = positions.map((p) => ({
+    id: uid(),
+    date: p.date || todayISO(),
+    category: p.category,
+    project: p.project,
+    app: p.app,
+    amount: p.amount,
+    note: p.note,
+    ts: now
+  }))
+  await withTx(['positions', 'records'], 'readwrite', async (_, getStore) => {
+    getStore('positions').clear()
+    getStore('records').clear()
+    positions.forEach((p) => getStore('positions').put(p))
+    records.forEach((r) => getStore('records').put(r))
+  })
+}
+
 /** CSV 导入：按「项目 + 分类」整体替换持仓（用于从外部表格恢复） */
 export async function bulkSavePositions(positions: Position[]): Promise<void> {
   await withTx(['positions'], 'readwrite', async (_, getStore) => {
