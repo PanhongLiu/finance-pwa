@@ -1,28 +1,25 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Deposit, DepositInput, Investment, InvestmentInput, ReserveFund, ReserveInput } from '../types'
+import type { GoalInput, Position, RecordInput, ReserveGoal, DepositRecord } from '../types'
 import * as finance from '../services/finance'
 import type { AllData } from '../services/finance'
 import { computePortfolio, type PortfolioSummary } from '../services/calc'
 
 interface FinanceContextValue {
   loading: boolean
-  deposits: Deposit[]
-  investments: Investment[]
-  reserveFunds: ReserveFund[]
+  positions: Position[]
+  goals: ReserveGoal[]
+  records: DepositRecord[]
   portfolio: PortfolioSummary
   reload: () => Promise<void>
-  // 存款 / 理财（由「记一笔」同步写入）
-  addDeposit: (i: DepositInput) => Promise<void>
-  updateDeposit: (id: string, i: DepositInput) => Promise<void>
-  deleteDeposit: (id: string) => Promise<void>
-  addInvestment: (i: InvestmentInput) => Promise<void>
-  updateInvestment: (id: string, i: InvestmentInput) => Promise<void>
-  deleteInvestment: (id: string) => Promise<void>
-  // 备用金
-  addReserve: (i: ReserveInput) => Promise<void>
-  updateReserve: (id: string, i: ReserveInput) => Promise<void>
-  deleteReserve: (id: string) => Promise<void>
-  reserveSetAmount: (reserveId: string, newAmount: number, date: string, note: string) => Promise<void>
+  // 记一笔
+  addRecord: (i: RecordInput) => Promise<void>
+  // 持仓
+  updatePositionAmount: (id: string, newAmount: number, deposit: number, date: string) => Promise<void>
+  deletePosition: (id: string) => Promise<void>
+  // 备用金目标
+  addGoal: (i: GoalInput) => Promise<void>
+  updateGoalProgress: (id: string, amount: number, date: string) => Promise<void>
+  deleteGoal: (id: string) => Promise<void>
   // 数据
   exportAll: () => Promise<finance.BackupFile>
   importAll: (file: finance.BackupFile) => Promise<void>
@@ -33,13 +30,7 @@ const FinanceContext = createContext<FinanceContextValue | null>(null)
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<AllData>({
-    accounts: [],
-    transactions: [],
-    deposits: [],
-    investments: [],
-    reserveFunds: []
-  })
+  const [data, setData] = useState<AllData>({ positions: [], goals: [], records: [] })
 
   const reload = useCallback(async () => {
     const d = await finance.loadAll()
@@ -49,6 +40,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
     ;(async () => {
+      await finance.migrateLegacy()
       await finance.seedIfEmpty()
       const d = await finance.loadAll()
       if (mounted) {
@@ -61,10 +53,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const portfolio = useMemo(
-    () => computePortfolio(data.deposits, data.investments, data.reserveFunds),
-    [data.deposits, data.investments, data.reserveFunds]
-  )
+  const portfolio = useMemo(() => computePortfolio(data.positions), [data.positions])
 
   const wrap = useCallback(async (fn: () => Promise<void>) => {
     await fn()
@@ -73,26 +62,21 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const value: FinanceContextValue = {
     loading,
-    deposits: data.deposits,
-    investments: data.investments,
-    reserveFunds: data.reserveFunds,
+    positions: data.positions,
+    goals: data.goals,
+    records: data.records,
     portfolio,
     reload,
-    addDeposit: (i) => wrap(() => finance.addDeposit(i)),
-    updateDeposit: (id, i) => wrap(() => finance.updateDeposit(id, i)),
-    deleteDeposit: (id) => wrap(() => finance.deleteDeposit(id)),
-    addInvestment: (i) => wrap(() => finance.addInvestment(i)),
-    updateInvestment: (id, i) => wrap(() => finance.updateInvestment(id, i)),
-    deleteInvestment: (id) => wrap(() => finance.deleteInvestment(id)),
-    addReserve: (i) => wrap(() => finance.addReserve(i)),
-    updateReserve: (id, i) => wrap(() => finance.updateReserve(id, i)),
-    deleteReserve: (id) => wrap(() => finance.deleteReserve(id)),
-    reserveSetAmount: (rid, amount, date, note) => wrap(() => finance.reserveAdjust(rid, amount, date, note)),
+    addRecord: (i) => wrap(() => finance.addRecord(i)),
+    updatePositionAmount: (id, newAmount, deposit, date) => wrap(() => finance.updatePositionAmount(id, newAmount, deposit, date)),
+    deletePosition: (id) => wrap(() => finance.deletePosition(id)),
+    addGoal: (i) => wrap(() => finance.addGoal(i)),
+    updateGoalProgress: (id, amount, date) => wrap(() => finance.updateGoalProgress(id, amount, date)),
+    deleteGoal: (id) => wrap(() => finance.deleteGoal(id)),
     exportAll: () => finance.exportAll(),
     importAll: (file) => wrap(() => finance.importAll(file)),
     clearAllData: async () => {
       await finance.clearAllData()
-      await finance.seedIfEmpty()
       await reload()
     }
   }

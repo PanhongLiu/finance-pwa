@@ -12,7 +12,10 @@ const STORE_NAMES = [
   'deposits',
   'investments',
   'reserveFunds',
-  'settings'
+  'settings',
+  'positions',
+  'goals',
+  'records'
 ] as const
 
 export type StoreName = (typeof STORE_NAMES)[number]
@@ -45,12 +48,10 @@ export function openDB(): Promise<IDBDatabase> {
     req.onupgradeneeded = (event) => {
       const db = req.result
       const oldVersion = (event as IDBVersionChangeEvent).oldVersion
-      // 首次创建：建立所有对象仓库
-      if (oldVersion < 1) {
-        for (const name of STORE_NAMES) {
-          if (!db.objectStoreNames.contains(name)) {
-            db.createObjectStore(name, { keyPath: 'id' })
-          }
+      // 首次创建或升级：补齐所有对象仓库（旧库也据此新增 positions/goals/records）
+      for (const name of STORE_NAMES) {
+        if (!db.objectStoreNames.contains(name)) {
+          db.createObjectStore(name, { keyPath: 'id' })
         }
       }
       migrate(db, oldVersion, DB_VERSION)

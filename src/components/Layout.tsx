@@ -10,9 +10,9 @@ export function Layout() {
 }
 
 const TABS = [
-  { to: '/', label: '首页', icon: '🏠', end: true },
-  { to: '/assets', label: '存款理财', icon: '💰' },
-  { to: '/reserve', label: '备用金', icon: '🧰' }
+  { to: '/', label: '记一笔', icon: '✍️', end: true },
+  { to: '/reserve', label: '备用金', icon: '🧰' },
+  { to: '/assets', label: '明细', icon: '📋' }
 ]
 
 function TabBar() {

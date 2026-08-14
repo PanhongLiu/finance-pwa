@@ -186,3 +186,75 @@ export const ASSET_COLORS = {
   investment: '#ff9f0a',
   reserve: '#34c759'
 } as const
+
+// ===================== 统一持仓模型（存款 / 理财 / 其他） =====================
+// 同一「项目 + 分类」合并为一行；金额以整数分存储。
+
+export type PositionCategory = '定期存款' | '理财' | '其他'
+
+export const POSITION_CATEGORIES: PositionCategory[] = ['定期存款', '理财', '其他']
+
+/** 分类配色（与界面主题一致） */
+export const CATEGORY_COLORS: Record<string, string> = {
+  定期存款: '#2563eb',
+  理财: '#f59e0b',
+  其他: '#10b981'
+}
+
+/** 持仓：存款 / 理财 / 其他 的统一记录 */
+export interface Position {
+  id: string
+  project: string // 项目名，如「旅游基金」「稳健理财A」
+  category: PositionCategory
+  app: string // 存放平台 / 银行，如「工商银行」「支付宝」
+  amount: number // 当前金额（分）
+  prevAmount: number // 上次金额（分）
+  lastGain: number // 距上次收益（分）
+  gainType: 'base' | 'deposit' | 'market'
+  date: string // 更新日期 YYYY-MM-DD
+  prevDate: string // 上次日期 YYYY-MM-DD
+  note: string
+  expiry: string // 到期时间 YYYY-MM-DD（选填）
+  ts: number
+  lastDeposit: number // 上次新存入（分）
+}
+
+/** 备用金目标（进度制：累计存入向目标金额靠近） */
+export interface ReserveGoal {
+  id: string
+  name: string
+  target: number // 目标金额（分）
+  deadline: string // 截止日期 YYYY-MM-DD（选填）
+  log: { date: string; amount: number }[] // 存入记录（分）
+  ts: number
+}
+
+/** 存款 / 理财 流水（用于月度趋势统计） */
+export interface DepositRecord {
+  id: string
+  date: string
+  category: string
+  project: string
+  app: string
+  amount: number // 分
+  note: string
+  ts: number
+}
+
+// ===================== 输入类型 =====================
+
+export interface RecordInput {
+  amount: number // 分
+  date: string
+  category: PositionCategory
+  project: string
+  app: string
+  expiry: string
+  note: string
+}
+
+export interface GoalInput {
+  name: string
+  target: number // 分
+  deadline: string
+}

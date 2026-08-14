@@ -35,7 +35,7 @@ export function SettingsPage() {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result)) as BackupFile
-        if (parsed.app !== 'personal-finance-pwa' || !parsed.data) {
+        if (parsed.app !== 'deposit-workbench' || !parsed.data) {
           setImportError('文件格式不正确，不是本应用的备份')
           return
         }
