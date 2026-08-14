@@ -37,6 +37,8 @@ export interface Transaction {
   updatedAt: string
 }
 
+export type AssetKind = 'deposit' | 'wealth'
+
 export interface Deposit {
   id: string
   bank: string
@@ -46,6 +48,7 @@ export interface Deposit {
   annualRate: number // 年利率，如 2.5 表示 2.5%
   startDate: string
   endDate: string
+  currentAmount: number // 当前金额（分，可手动更新，默认等于本金）
   note: string
   createdAt: string
   updatedAt: string
@@ -61,6 +64,7 @@ export interface Investment {
   realizedProfit: number // 已实现收益，分
   unrealizedProfit: number // 未实现收益，分
   fee: number // 手续费，分
+  annualRate: number // 约定年化 / 业绩比较基准（%，可选，默认 0）
   purchaseDate: string
   note: string
   createdAt: string
@@ -72,7 +76,7 @@ export interface ReserveFund {
   name: string
   targetAmount: number // 目标金额，分
   currentAmount: number // 当前金额，分
-  accountId: string // 所属现金账户（仅用于展示/归类）
+  accountId?: string // 所属现金账户（仅用于展示/归类，已弃用）
   note: string
   createdAt: string
   updatedAt: string
@@ -119,8 +123,8 @@ export interface DepositInput {
   annualRate: number
   startDate: string
   endDate: string
+  currentAmount?: number // 当前金额，不填则等于本金
   note: string
-  sourceAccountId?: string // 资金来源账户（创建时从活期等扣除）
 }
 
 export interface InvestmentInput {
@@ -132,16 +136,16 @@ export interface InvestmentInput {
   realizedProfit: number
   unrealizedProfit: number
   fee: number
+  annualRate?: number // 约定年化，不填则 0
   purchaseDate: string
   note: string
-  sourceAccountId?: string
 }
 
 export interface ReserveInput {
   name: string
   targetAmount: number
   currentAmount: number
-  accountId: string
+  accountId?: string
   note: string
 }
 

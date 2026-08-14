@@ -1,50 +1,39 @@
-import { useMemo } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { EmptyState } from '../../components/EmptyState'
 import { DoughnutChart } from '../../components/DoughnutChart'
-import { TransactionItem } from '../../components/TransactionItem'
+import { AssetForm } from '../Assets/AssetForm'
 import { useFinance } from '../../store/FinanceContext'
 import { formatCNY, formatSignedCNY } from '../../utils/money'
 import { percent } from '../../services/calc'
-import { ASSET_COLORS } from '../../types'
-import type { Transaction } from '../../types'
+
+function Metric({
+  label,
+  value,
+  sub,
+  positive
+}: {
+  label: string
+  value: string
+  sub?: string
+  positive?: boolean
+}) {
+  return (
+    <div className="metric">
+      <div className="metric__label">{label}</div>
+      <div className={`metric__value${positive === true ? ' metric__value--up' : positive === false ? ' metric__value--down' : ''}`}>
+        {value}
+      </div>
+      {sub && <div className="metric__sub">{sub}</div>}
+    </div>
+  )
+}
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const { totals, monthChange, transactions, loading } = useFinance()
-
-  const recent = useMemo(() => {
-    return [...transactions]
-      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
-      .slice(0, 10)
-  }, [transactions])
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, Transaction[]>()
-    for (const t of recent) {
-      const arr = map.get(t.date) ?? []
-      arr.push(t)
-      map.set(t.date, arr)
-    }
-    return Array.from(map.entries())
-  }, [recent])
-
-  const slices = [
-    { label: '活期', value: totals.current, color: ASSET_COLORS.current },
-    { label: '存款', value: totals.deposit, color: ASSET_COLORS.deposit },
-    { label: '理财', value: totals.investment, color: ASSET_COLORS.investment },
-    { label: '备用金', value: totals.reserve, color: ASSET_COLORS.reserve }
-  ].filter((s) => s.value !== 0)
-
-  const rows = [
-    { label: '活期', value: totals.current, color: ASSET_COLORS.current },
-    { label: '存款', value: totals.deposit, color: ASSET_COLORS.deposit },
-    { label: '理财', value: totals.investment, color: ASSET_COLORS.investment },
-    { label: '备用金', value: totals.reserve, color: ASSET_COLORS.reserve }
-  ]
-
-  const up = monthChange >= 0
+  const { portfolio, loading } = useFinance()
+  const [savedToast, setSavedToast] = useState(false)
 
   if (loading) {
     return (
@@ -57,6 +46,9 @@ export function Dashboard() {
     )
   }
 
+  const marketTotal = portfolio.depositCurrent + portfolio.wealthCurrent
+  const slices = portfolio.categories
+
   return (
     <>
       <PageHeader
@@ -68,71 +60,109 @@ export function Dashboard() {
         }
       />
       <div className="page">
+        {/* 记一笔：放在首页最上方，存款/理财 一键入账 */}
+        <div className="card record-card">
+          <div className="record-card__head">
+            <h3 className="card__title" style={{ margin: 0 }}>
+              记一笔
+            </h3>
+            <span className="muted">存款 / 理财 入账</span>
+          </div>
+          <AssetForm
+            variant="inline"
+            mode="add"
+            kind="deposit"
+            onClose={() => {}}
+            onSaved={() => {
+              setSavedToast(true)
+              window.setTimeout(() => setSavedToast(false), 1500)
+            }}
+          />
+        </div>
+
         {/* 总资产 */}
         <div className="total-asset">
-          <div className="total-asset__label">总资产</div>
-          <div className="total-asset__amount">{formatCNY(totals.total)}</div>
-          <div className={`total-asset__delta ${up ? 'total-asset__delta--up' : 'total-asset__delta--down'}`}>
-            较上月 {formatSignedCNY(monthChange)}
+          <div className="total-asset__label">总资产（存款 + 理财 + 备用金）</div>
+          <div className="total-asset__amount">{formatCNY(portfolio.totalAsset)}</div>
+          <div className="total-asset__delta">存款当前 {formatCNY(portfolio.depositCurrent)} · 理财市值 {formatCNY(portfolio.wealthCurrent)}</div>
+        </div>
+
+        {/* 收益指标：当前收益 / 总收益 / 当前年化率 / 总年化率 */}
+        <div className="card">
+          <h3 className="card__title">收益概览</h3>
+          <div className="metrics-grid">
+            <Metric
+              label="当前收益"
+              value={formatSignedCNY(portfolio.currentGain)}
+              sub={`当前年化 ${portfolio.currentAnnualized.toFixed(2)}%`}
+              positive={portfolio.currentGain >= 0}
+            />
+            <Metric
+              label="总收益"
+              value={formatSignedCNY(portfolio.totalGain)}
+              sub="到期 / 累计"
+              positive={portfolio.totalGain >= 0}
+            />
+            <Metric label="当前年化率" value={`${portfolio.currentAnnualized.toFixed(2)}%`} />
+            <Metric label="总年化率" value={`${portfolio.totalAnnualized.toFixed(2)}%`} />
           </div>
         </div>
 
-        {/* 资产结构环形图 */}
+        {/* 存款 / 理财 分类 */}
         <div className="card">
-          <h3 className="card__title">资产结构</h3>
+          <h3 className="card__title">存款 / 理财 · 分类</h3>
           {slices.length === 0 ? (
-            <EmptyState icon="🥧" text="暂无资产数据" />
+            <EmptyState icon="🥧" text="还没有存款或理财，先记一笔吧" />
           ) : (
-            <DoughnutChart data={slices} centerLabel={formatCNY(totals.total)} centerSub="总资产" />
-          )}
-          <div className="asset-rows mt16">
-            {rows.map((r) => (
-              <div className="asset-row" key={r.label}>
-                <div className="asset-row__name">
-                  <span className="dot" style={{ background: r.color }} />
-                  {r.label}
-                </div>
-                <div className="asset-row__right">
-                  <div className="asset-row__amount">{formatCNY(r.value)}</div>
-                  <div className="asset-row__pct">{percent(r.value, totals.total).toFixed(1)}%</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 最近记录 */}
-        <div className="card">
-          <h3 className="card__title">最近记录</h3>
-          {grouped.length === 0 ? (
-            <EmptyState icon="📝" text="还没有记录，点击下方按钮开始记账" />
-          ) : (
-            grouped.map(([date, items]) => (
-              <div key={date}>
-                <div className="record-group__date">{date}</div>
-                {items.map((t) => (
-                  <TransactionItem key={t.id} tx={t} onClick={() => navigate('/transaction')} />
+            <>
+              <DoughnutChart
+                data={slices.map((s) => ({ label: s.label, value: s.value, color: s.color }))}
+                centerLabel={formatCNY(marketTotal)}
+                centerSub="市值合计"
+              />
+              <div className="asset-rows mt16">
+                {slices.map((s) => (
+                  <div className="asset-row" key={`${s.kind}:${s.label}`}>
+                    <div className="asset-row__name">
+                      <span className="dot" style={{ background: s.color }} />
+                      {s.label}
+                    </div>
+                    <div className="asset-row__right">
+                      <div className="asset-row__amount">{formatCNY(s.value)}</div>
+                      <div className="asset-row__pct">{percent(s.value, marketTotal).toFixed(1)}%</div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            ))
+            </>
           )}
         </div>
 
-        {/* 快捷操作 */}
-        <div className="quick-actions">
-          <button className="quick-btn" onClick={() => navigate('/transaction')}>
-            <span className="quick-btn__plus">＋</span>
-            记一笔
-          </button>
-          <button className="quick-btn" onClick={() => navigate('/assets')}>
-            <span className="quick-btn__plus">＋</span>
-            新增存款/理财
-          </button>
-          <button className="quick-btn" onClick={() => navigate('/reserve')}>
-            <span className="quick-btn__plus">＋</span>
-            新增备用金
+        {/* 备用金概览 */}
+        <div className="card">
+          <h3 className="card__title">备用金</h3>
+          <div className="row-between" style={{ marginBottom: 6 }}>
+            <span className="muted">当前合计</span>
+            <span style={{ fontWeight: 700, fontSize: 18 }}>{formatCNY(portfolio.reserveTotal)}</span>
+          </div>
+          <button className="link-btn link-btn--inline" onClick={() => navigate('/reserve')}>
+            管理备用金 →
           </button>
         </div>
+
+        {/* 快捷跳转 */}
+        <div className="quick-actions">
+          <button className="quick-btn" onClick={() => navigate('/assets')}>
+            <span className="quick-btn__plus">¥</span>
+            存款理财
+          </button>
+          <button className="quick-btn" onClick={() => navigate('/reserve')}>
+            <span className="quick-btn__plus">🧰</span>
+            备用金
+          </button>
+        </div>
+
+        {savedToast && <div className="toast">已保存 ✓</div>}
       </div>
     </>
   )

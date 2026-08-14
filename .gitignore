@@ -7,3 +7,6 @@ tmp
 .DS_Store
 _unused_*
 scripts/_calc_test.mjs
+
+# 项目运行数据（非源码，不发布）
+.workbuddy/

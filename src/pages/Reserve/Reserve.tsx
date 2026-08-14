@@ -7,37 +7,17 @@ import { useFinance } from '../../store/FinanceContext'
 import { formatCNY } from '../../utils/money'
 import { toCents } from '../../utils/money'
 import { todayISO } from '../../utils/date'
-import { RESERVE_TYPES, type LocationRef, type ReserveFund } from '../../types'
+import { RESERVE_TYPES, type ReserveFund } from '../../types'
 
 export function ReservePage() {
-  const {
-    reserveFunds,
-    accounts,
-    investments,
-    addReserve,
-    updateReserve,
-    deleteReserve,
-    reserveTransferIn,
-    reserveTransferOut,
-    reserveAdjust
-  } = useFinance()
+  const { reserveFunds, addReserve, updateReserve, deleteReserve, reserveSetAmount } = useFinance()
 
   const [addEditor, setAddEditor] = useState<{ open: boolean; mode: 'add' | 'edit'; initial?: ReserveFund | null }>({
     open: false,
     mode: 'add'
   })
-  const [op, setOp] = useState<{ mode: 'in' | 'out'; reserveId: string } | null>(null)
   const [adjustId, setAdjustId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-
-  const locOptions = [
-    ...accounts.map((a) => ({ ref: { kind: 'account' as const, id: a.id }, label: `💳 ${a.name}` })),
-    ...investments.map((i) => ({ ref: { kind: 'investment' as const, id: i.id }, label: `📊 ${i.name}` }))
-  ]
-
-  function accountName(id: string) {
-    return accounts.find((a) => a.id === id)?.name ?? '-'
-  }
 
   return (
     <>
@@ -53,7 +33,7 @@ export function ReservePage() {
               <div className="list-card" key={r.id}>
                 <div className="list-card__top">
                   <span className="list-card__name">{r.name}</span>
-                  <span className="list-card__tag">所属：{accountName(r.accountId)}</span>
+                  <span className="list-card__tag">备用金</span>
                 </div>
                 <div className="progress">
                   <div className="progress__bar" style={{ width: `${shown}%` }} />
@@ -65,17 +45,9 @@ export function ReservePage() {
                   <span className="progress__pct">{pct.toFixed(0)}%</span>
                 </div>
                 <div className="list-card__actions">
-                  <button className="link-btn" onClick={() => setOp({ mode: 'in', reserveId: r.id })}>
-                    转入
-                  </button>
-                  <button className="link-btn" onClick={() => setOp({ mode: 'out', reserveId: r.id })}>
-                    转出
-                  </button>
                   <button className="link-btn" onClick={() => setAdjustId(r.id)}>
-                    调整
+                    更新金额
                   </button>
-                </div>
-                <div className="list-card__actions">
                   <button className="link-btn" onClick={() => setAddEditor({ open: true, mode: 'edit', initial: r })}>
                     编辑
                   </button>
@@ -97,7 +69,7 @@ export function ReservePage() {
         ＋
       </button>
 
-      {/* 新增/编辑备用金 */}
+      {/* 新增 / 编辑 */}
       <ReserveForm
         open={addEditor.open}
         mode={addEditor.mode}
@@ -110,31 +82,13 @@ export function ReservePage() {
         }}
       />
 
-      {/* 转入 / 转出 */}
-      <OperationSheet
-        op={op}
-        locOptions={locOptions}
-        onClose={() => setOp(null)}
-        onConfirm={async (other, amount, date) => {
-          if (!op) return
-          if (op.mode === 'in') {
-            const from: LocationRef = { kind: other.kind, id: other.id }
-            await reserveTransferIn(op.reserveId, from, amount, date)
-          } else {
-            const to: LocationRef = { kind: other.kind, id: other.id }
-            await reserveTransferOut(op.reserveId, to, amount, date)
-          }
-          setOp(null)
-        }}
-      />
-
-      {/* 调整余额 */}
+      {/* 更新当前金额 */}
       <AdjustSheet
         open={!!adjustId}
         reserve={reserveFunds.find((r) => r.id === adjustId) ?? null}
         onClose={() => setAdjustId(null)}
         onConfirm={async (amount, date, note) => {
-          if (adjustId) await reserveAdjust(adjustId, amount, date, note)
+          if (adjustId) await reserveSetAmount(adjustId, amount, date, note)
           setAdjustId(null)
         }}
       />
@@ -167,19 +121,11 @@ function ReserveForm({
   mode: 'add' | 'edit'
   initial?: ReserveFund | null
   onClose: () => void
-  onSave: (input: {
-    name: string
-    targetAmount: number
-    currentAmount: number
-    accountId: string
-    note: string
-  }) => Promise<void>
+  onSave: (input: { name: string; targetAmount: number; currentAmount: number; note: string }) => Promise<void>
 }) {
-  const { accounts, defaultAccountId } = useFinance()
   const [name, setName] = useState(initial?.name ?? RESERVE_TYPES[0])
   const [target, setTarget] = useState(initial ? String(initial.targetAmount / 100) : '')
   const [current, setCurrent] = useState(initial ? String(initial.currentAmount / 100) : '')
-  const [accountId, setAccountId] = useState(initial?.accountId ?? defaultAccountId ?? '')
   const [note, setNote] = useState(initial?.note ?? '')
   const [error, setError] = useState('')
 
@@ -200,13 +146,7 @@ function ReserveForm({
       return
     }
     try {
-      await onSave({
-        name: name.trim(),
-        targetAmount: targetCents,
-        currentAmount: currentCents,
-        accountId,
-        note: note.trim()
-      })
+      await onSave({ name: name.trim(), targetAmount: targetCents, currentAmount: currentCents, note: note.trim() })
     } catch (e) {
       setError(e instanceof Error ? e.message : '保存失败')
     }
@@ -218,7 +158,7 @@ function ReserveForm({
         <label className="field__label">名称</label>
         <div className="chips">
           {RESERVE_TYPES.map((t) => (
-            <button key={t} className={`chip${name === t ? ' chip--active' : ''}`} onClick={() => setName(t)}>
+            <button key={t} type="button" className={`chip${name === t ? ' chip--active' : ''}`} onClick={() => setName(t)}>
               {t}
             </button>
           ))}
@@ -257,16 +197,6 @@ function ReserveForm({
         </div>
       </div>
       <div className="field">
-        <label className="field__label">所属账户</label>
-        <select className="select" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="field">
         <label className="field__label">备注</label>
         <input className="input" placeholder="可选" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
@@ -283,92 +213,7 @@ function ReserveForm({
   )
 }
 
-// ---------------- 转入/转出 ----------------
-function OperationSheet({
-  op,
-  locOptions,
-  onClose,
-  onConfirm
-}: {
-  op: { mode: 'in' | 'out'; reserveId: string } | null
-  locOptions: { ref: LocationRef; label: string }[]
-  onClose: () => void
-  onConfirm: (other: LocationRef, amount: number, date: string) => Promise<void>
-}) {
-  const [other, setOther] = useState('')
-  const [amount, setAmount] = useState('')
-  const [date, setDate] = useState(todayISO())
-  const [error, setError] = useState('')
-
-  function parseRef(v: string): LocationRef | undefined {
-    if (!v) return undefined
-    const [kind, id] = v.split(':')
-    return { kind: kind as LocationRef['kind'], id }
-  }
-
-  async function handleConfirm() {
-    setError('')
-    const cents = toCents(amount)
-    const ref = parseRef(other)
-    if (cents <= 0) {
-      setError('请输入大于 0 的金额')
-      return
-    }
-    if (!ref) {
-      setError('请选择对方账户')
-      return
-    }
-    try {
-      await onConfirm(ref, cents, date)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '操作失败')
-    }
-  }
-
-  return (
-    <Sheet open={!!op} title={op?.mode === 'in' ? '转入备用金' : '转出备用金'} onClose={onClose}>
-      <div className="field">
-        <label className="field__label">金额</label>
-        <div className="amount-line">
-          <span className="amount-prefix">¥</span>
-          <input
-            className="input input--amount"
-            inputMode="decimal"
-            placeholder="0.00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))}
-          />
-        </div>
-      </div>
-      <div className="field">
-        <label className="field__label">{op?.mode === 'in' ? '从（账户/理财）转出' : '转入到（账户/理财）'}</label>
-        <select className="select" value={other} onChange={(e) => setOther(e.target.value)}>
-          <option value="">请选择</option>
-          {locOptions.map((o) => (
-            <option key={`${o.ref.kind}:${o.ref.id}`} value={`${o.ref.kind}:${o.ref.id}`}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="field">
-        <label className="field__label">日期</label>
-        <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      </div>
-      {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
-      <div className="btn-row">
-        <button className="btn btn--muted" onClick={onClose}>
-          取消
-        </button>
-        <button className="btn btn--primary" onClick={handleConfirm}>
-          确定
-        </button>
-      </div>
-    </Sheet>
-  )
-}
-
-// ---------------- 调整余额 ----------------
+// ---------------- 更新当前金额 ----------------
 function AdjustSheet({
   open,
   reserve,
@@ -400,7 +245,7 @@ function AdjustSheet({
   }
 
   return (
-    <Sheet open={open} title="调整余额" onClose={onClose}>
+    <Sheet open={open} title="更新当前金额" onClose={onClose}>
       {reserve && (
         <div className="kv" style={{ marginBottom: 12 }}>
           <span className="kv__key">当前余额</span>

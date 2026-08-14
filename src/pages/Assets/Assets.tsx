@@ -2,39 +2,32 @@ import { useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { AssetForm } from './AssetForm'
 import { useFinance } from '../../store/FinanceContext'
-import { DepositForm } from './DepositForm'
-import { InvestmentForm } from './InvestmentForm'
-import { formatCNY, formatSignedCNY } from '../../utils/money'
+import { formatCNY, formatSignedCNY, formatPercent } from '../../utils/money'
 import {
-  depositExpectedInterest,
-  depositMaturityAmount,
-  depositDaysToMaturity,
-  investmentTotalProfit,
-  investmentRate
+  depositToRow,
+  investmentToRow,
+  assetGainNow,
+  assetGainTotal,
+  assetAnnualizedNow,
+  assetAnnualizedTotal
 } from '../../services/calc'
 import type { Deposit, Investment } from '../../types'
 
-type Tab = 'deposit' | 'investment'
+type Tab = 'deposit' | 'wealth'
 
 export function AssetsPage() {
   const { deposits, investments, deleteDeposit, deleteInvestment } = useFinance()
   const [tab, setTab] = useState<Tab>('deposit')
-  const [depEditor, setDepEditor] = useState<{ open: boolean; mode: 'add' | 'edit'; initial?: Deposit | null }>({
-    open: false,
-    mode: 'add'
-  })
-  const [invEditor, setInvEditor] = useState<{
+  const [editor, setEditor] = useState<{
     open: boolean
-    mode: 'add' | 'edit'
-    initial?: Investment | null
-  }>({ open: false, mode: 'add' })
+    kind: 'deposit' | 'wealth'
+    initial?: Deposit | Investment | null
+  }>({ open: false, kind: 'deposit', initial: null })
   const [deleteTarget, setDeleteTarget] = useState<{ kind: Tab; id: string } | null>(null)
 
-  const invTotalValue = investments.reduce((s, i) => s + i.currentValue, 0)
-  const invTotalProfit = investments.reduce((s, i) => s + investmentTotalProfit(i), 0)
-  const invTotalInvested = investments.reduce((s, i) => s + i.investedAmount, 0)
-  const invRate = invTotalInvested === 0 ? 0 : (invTotalProfit / invTotalInvested) * 100
+  const list = tab === 'deposit' ? deposits : investments
 
   return (
     <>
@@ -45,194 +38,132 @@ export function AssetsPage() {
             className={`tabs-inline__item${tab === 'deposit' ? ' tabs-inline__item--active' : ''}`}
             onClick={() => setTab('deposit')}
           >
-            存款
+            存款（{deposits.length}）
           </button>
           <button
-            className={`tabs-inline__item${tab === 'investment' ? ' tabs-inline__item--active' : ''}`}
-            onClick={() => setTab('investment')}
+            className={`tabs-inline__item${tab === 'wealth' ? ' tabs-inline__item--active' : ''}`}
+            onClick={() => setTab('wealth')}
           >
-            理财
+            理财（{investments.length}）
           </button>
         </div>
 
-        {tab === 'deposit' ? (
-          <>
-            {deposits.length === 0 ? (
-              <EmptyState icon="🏦" text="还没有存款记录，点击右下角添加" />
-            ) : (
-              deposits.map((d) => {
-                const interest = depositExpectedInterest(d)
-                const maturity = depositMaturityAmount(d)
-                const days = depositDaysToMaturity(d)
-                return (
-                  <div className="list-card" key={d.id}>
-                    <div className="list-card__top">
-                      <span className="list-card__name">{d.name}</span>
-                      <span className="list-card__tag">{d.type}</span>
-                    </div>
-                    <div className="list-card__row">
-                      <span>{d.bank}</span>
-                      <span>
-                        本金 <b>{formatCNY(d.principal)}</b>
-                      </span>
-                    </div>
-                    <div className="list-card__row">
-                      <span>年利率</span>
-                      <span>
-                        <b>{d.annualRate}%</b>
-                      </span>
-                    </div>
-                    <div className="list-card__row">
-                      <span>预计利息</span>
-                      <span style={{ color: 'var(--green)' }}>
-                        <b>+{formatCNY(interest)}</b>
-                      </span>
-                    </div>
-                    <div className="list-card__row">
-                      <span>到期本息</span>
-                      <span>
-                        <b>{formatCNY(maturity)}</b>
-                      </span>
-                    </div>
-                    <div className="list-card__row">
-                      <span>
-                        {d.startDate} ~ {d.endDate}
-                      </span>
-                      <span>{days >= 0 ? `还有 ${days} 天` : `已到期 ${-days} 天`}</span>
-                    </div>
-                    {d.note && (
-                      <div className="list-card__row">
-                        <span className="muted">{d.note}</span>
-                      </div>
-                    )}
-                    <div className="list-card__actions">
-                      <button className="link-btn" onClick={() => setDepEditor({ open: true, mode: 'edit', initial: d })}>
-                        编辑
-                      </button>
-                      <button
-                        className="link-btn"
-                        style={{ color: 'var(--red)' }}
-                        onClick={() => setDeleteTarget({ kind: 'deposit', id: d.id })}
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </>
+        {list.length === 0 ? (
+          <EmptyState
+            icon={tab === 'deposit' ? '🏦' : '📊'}
+            text={`还没有${tab === 'deposit' ? '存款' : '理财'}记录，点击右下角添加`}
+          />
         ) : (
-          <>
-            {investments.length > 0 && (
-              <div className="card">
-                <h3 className="card__title">理财总览</h3>
-                <div className="row-between" style={{ marginBottom: 6 }}>
-                  <span className="muted">当前市值</span>
-                  <span style={{ fontWeight: 700, fontSize: 18 }}>{formatCNY(invTotalValue)}</span>
+          list.map((item) => {
+            const row =
+              tab === 'deposit'
+                ? depositToRow(item as Deposit)
+                : investmentToRow(item as Investment)
+            const gainNow = assetGainNow(row)
+            const gainTotal = assetGainTotal(row)
+            const annNow = assetAnnualizedNow(row)
+            const annTotal = assetAnnualizedTotal(row)
+            const isDeposit = tab === 'deposit'
+            return (
+              <div className="list-card" key={row.id}>
+                <div className="list-card__top">
+                  <span className="list-card__name">{row.name}</span>
+                  <span className="list-card__tag">{row.category}</span>
                 </div>
-                <div className="row-between" style={{ marginBottom: 6 }}>
-                  <span className="muted">总收益</span>
-                  <span style={{ fontWeight: 700, color: invTotalProfit >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                    {formatSignedCNY(invTotalProfit)}
-                  </span>
+                {isDeposit ? (
+                  <div className="list-card__row">
+                    <span className="muted">{row.institution}</span>
+                    <span>
+                      {row.startDate}
+                      {row.termDays != null && row.termDays > 0 ? ` · 期限 ${row.termDays} 天` : ' · 活期'}
+                    </span>
+                  </div>
+                ) : (
+                  row.institution && (
+                    <div className="list-card__row">
+                      <span className="muted">{row.institution}</span>
+                    </div>
+                  )
+                )}
+
+                <div className="metrics-grid">
+                  <div className="metric">
+                    <span className="metric__label">{isDeposit ? '当前金额' : '当前市值'}</span>
+                    <span className="metric__value">{formatCNY(row.currentValue)}</span>
+                  </div>
+                  <div className="metric">
+                    <span className="metric__label">本金 / 投入</span>
+                    <span className="metric__value">{formatCNY(row.principal)}</span>
+                  </div>
+                  <div className="metric">
+                    <span className="metric__label">当前收益</span>
+                    <span className="metric__value" style={{ color: gainNow >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                      {formatSignedCNY(gainNow)}
+                    </span>
+                  </div>
+                  <div className="metric">
+                    <span className="metric__label">{isDeposit ? '到期总利息' : '总收益'}</span>
+                    <span className="metric__value" style={{ color: gainTotal >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                      {formatSignedCNY(gainTotal)}
+                    </span>
+                  </div>
+                  <div className="metric">
+                    <span className="metric__label">当前年化率</span>
+                    <span className="metric__value" style={{ color: annNow >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                      {gainNow >= 0 || annNow >= 0 ? '+' : ''}
+                      {formatPercent(annNow)}
+                    </span>
+                  </div>
+                  <div className="metric">
+                    <span className="metric__label">总年化率</span>
+                    <span className="metric__value" style={{ color: annTotal >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                      {annTotal >= 0 ? '+' : ''}
+                      {formatPercent(annTotal)}
+                    </span>
+                  </div>
                 </div>
-                <div className="row-between">
-                  <span className="muted">收益率</span>
-                  <span style={{ fontWeight: 700, color: invRate >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                    {invRate >= 0 ? '+' : ''}
-                    {invRate.toFixed(2)}%
-                  </span>
+
+                {(item as Deposit | Investment).note && (
+                  <div className="list-card__row">
+                    <span className="muted">{(item as Deposit | Investment).note}</span>
+                  </div>
+                )}
+
+                <div className="list-card__actions">
+                  <button
+                    className="link-btn"
+                    onClick={() => setEditor({ open: true, kind: tab, initial: item as Deposit | Investment })}
+                  >
+                    更新金额 / 编辑
+                  </button>
+                  <button
+                    className="link-btn"
+                    style={{ color: 'var(--red)' }}
+                    onClick={() => setDeleteTarget({ kind: tab, id: row.id })}
+                  >
+                    删除
+                  </button>
                 </div>
               </div>
-            )}
-            {investments.length === 0 ? (
-              <EmptyState icon="📊" text="还没有理财记录，点击右下角添加" />
-            ) : (
-              investments.map((i) => {
-                const profit = investmentTotalProfit(i)
-                const rate = investmentRate(i)
-                return (
-                  <div className="list-card" key={i.id}>
-                    <div className="list-card__top">
-                      <span className="list-card__name">{i.name}</span>
-                      <span className="list-card__tag">{i.type}</span>
-                    </div>
-                    {i.code && (
-                      <div className="list-card__row">
-                        <span className="muted">代码</span>
-                        <span>{i.code}</span>
-                      </div>
-                    )}
-                    <div className="list-card__row">
-                      <span>当前市值</span>
-                      <span>
-                        <b>{formatCNY(i.currentValue)}</b>
-                      </span>
-                    </div>
-                    <div className="list-card__row">
-                      <span>累计投入</span>
-                      <span>{formatCNY(i.investedAmount)}</span>
-                    </div>
-                    <div className="list-card__row">
-                      <span>总收益</span>
-                      <span style={{ color: profit >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                        <b>{formatSignedCNY(profit)}</b>
-                      </span>
-                    </div>
-                    <div className="list-card__row">
-                      <span>收益率</span>
-                      <span style={{ color: rate >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                        <b>
-                          {rate >= 0 ? '+' : ''}
-                          {rate.toFixed(2)}%
-                        </b>
-                      </span>
-                    </div>
-                    {i.note && (
-                      <div className="list-card__row">
-                        <span className="muted">{i.note}</span>
-                      </div>
-                    )}
-                    <div className="list-card__actions">
-                      <button className="link-btn" onClick={() => setInvEditor({ open: true, mode: 'edit', initial: i })}>
-                        市值调整 / 编辑
-                      </button>
-                      <button
-                        className="link-btn"
-                        style={{ color: 'var(--red)' }}
-                        onClick={() => setDeleteTarget({ kind: 'investment', id: i.id })}
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </>
+            )
+          })
         )}
       </div>
 
       <button
         className="fab"
         aria-label="新增"
-        onClick={() => (tab === 'deposit' ? setDepEditor({ open: true, mode: 'add' }) : setInvEditor({ open: true, mode: 'add' }))}
+        onClick={() => setEditor({ open: true, kind: tab, initial: null })}
       >
         ＋
       </button>
 
-      <DepositForm
-        open={depEditor.open}
-        mode={depEditor.mode}
-        initial={depEditor.initial}
-        onClose={() => setDepEditor({ open: false, mode: 'add' })}
-      />
-      <InvestmentForm
-        open={invEditor.open}
-        mode={invEditor.mode}
-        initial={invEditor.initial}
-        onClose={() => setInvEditor({ open: false, mode: 'add' })}
+      <AssetForm
+        open={editor.open}
+        mode={editor.initial ? 'edit' : 'add'}
+        kind={editor.kind}
+        initial={editor.initial}
+        onClose={() => setEditor({ open: false, kind: editor.kind, initial: null })}
       />
 
       <ConfirmDialog

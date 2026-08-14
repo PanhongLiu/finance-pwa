@@ -11,8 +11,7 @@ export function Layout() {
 
 const TABS = [
   { to: '/', label: '首页', icon: '🏠', end: true },
-  { to: '/transaction', label: '记一笔', icon: '✍️' },
-  { to: '/assets', label: '存款/理财', icon: '💰' },
+  { to: '/assets', label: '存款理财', icon: '💰' },
   { to: '/reserve', label: '备用金', icon: '🧰' }
 ]
 

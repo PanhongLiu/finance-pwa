@@ -1,44 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type {
-  Account,
-  Deposit,
-  DepositInput,
-  ExpenseInput,
-  IncomeInput,
-  Investment,
-  InvestmentInput,
-  LocationRef,
-  ReserveFund,
-  ReserveInput,
-  Transaction,
-  TransferInput
-} from '../types'
+import type { Deposit, DepositInput, Investment, InvestmentInput, ReserveFund, ReserveInput } from '../types'
 import * as finance from '../services/finance'
 import type { AllData } from '../services/finance'
-import { computeTotals, monthlyChange, type AssetTotals } from '../services/calc'
+import { computePortfolio, type PortfolioSummary } from '../services/calc'
 
 interface FinanceContextValue {
   loading: boolean
-  accounts: Account[]
-  transactions: Transaction[]
   deposits: Deposit[]
   investments: Investment[]
   reserveFunds: ReserveFund[]
-  totals: AssetTotals
-  monthChange: number
-  defaultAccountId: string | undefined
+  portfolio: PortfolioSummary
   reload: () => Promise<void>
-  // 记一笔
-  addIncome: (i: IncomeInput) => Promise<void>
-  addExpense: (i: ExpenseInput) => Promise<void>
-  addTransfer: (i: TransferInput) => Promise<void>
-  updateTransaction: (id: string, input: IncomeInput | ExpenseInput | TransferInput, type: Transaction['type']) => Promise<void>
-  deleteTransaction: (id: string) => Promise<void>
-  // 存款
+  // 存款 / 理财（由「记一笔」同步写入）
   addDeposit: (i: DepositInput) => Promise<void>
   updateDeposit: (id: string, i: DepositInput) => Promise<void>
   deleteDeposit: (id: string) => Promise<void>
-  // 理财
   addInvestment: (i: InvestmentInput) => Promise<void>
   updateInvestment: (id: string, i: InvestmentInput) => Promise<void>
   deleteInvestment: (id: string) => Promise<void>
@@ -46,9 +22,7 @@ interface FinanceContextValue {
   addReserve: (i: ReserveInput) => Promise<void>
   updateReserve: (id: string, i: ReserveInput) => Promise<void>
   deleteReserve: (id: string) => Promise<void>
-  reserveTransferIn: (reserveId: string, from: LocationRef, amount: number, date: string, note?: string) => Promise<void>
-  reserveTransferOut: (reserveId: string, to: LocationRef, amount: number, date: string, note?: string) => Promise<void>
-  reserveAdjust: (reserveId: string, newAmount: number, date: string, note: string) => Promise<void>
+  reserveSetAmount: (reserveId: string, newAmount: number, date: string, note: string) => Promise<void>
   // 数据
   exportAll: () => Promise<finance.BackupFile>
   importAll: (file: finance.BackupFile) => Promise<void>
@@ -87,15 +61,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const totals = useMemo(
-    () => computeTotals(data.accounts, data.deposits, data.investments, data.reserveFunds),
-    [data]
+  const portfolio = useMemo(
+    () => computePortfolio(data.deposits, data.investments, data.reserveFunds),
+    [data.deposits, data.investments, data.reserveFunds]
   )
-  const monthChange = useMemo(() => monthlyChange(data.transactions), [data.transactions])
-  const defaultAccountId = useMemo(() => {
-    const cur = data.accounts.find((a) => a.type === 'current')
-    return (cur ?? data.accounts[0])?.id
-  }, [data.accounts])
 
   const wrap = useCallback(async (fn: () => Promise<void>) => {
     await fn()
@@ -104,20 +73,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const value: FinanceContextValue = {
     loading,
-    accounts: data.accounts,
-    transactions: data.transactions,
     deposits: data.deposits,
     investments: data.investments,
     reserveFunds: data.reserveFunds,
-    totals,
-    monthChange,
-    defaultAccountId,
+    portfolio,
     reload,
-    addIncome: (i) => wrap(() => finance.addIncome(i)),
-    addExpense: (i) => wrap(() => finance.addExpense(i)),
-    addTransfer: (i) => wrap(() => finance.addTransfer(i)),
-    updateTransaction: (id, input, type) => wrap(() => finance.updateTransaction(id, input, type)),
-    deleteTransaction: (id) => wrap(() => finance.deleteTransaction(id)),
     addDeposit: (i) => wrap(() => finance.addDeposit(i)),
     updateDeposit: (id, i) => wrap(() => finance.updateDeposit(id, i)),
     deleteDeposit: (id) => wrap(() => finance.deleteDeposit(id)),
@@ -127,9 +87,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     addReserve: (i) => wrap(() => finance.addReserve(i)),
     updateReserve: (id, i) => wrap(() => finance.updateReserve(id, i)),
     deleteReserve: (id) => wrap(() => finance.deleteReserve(id)),
-    reserveTransferIn: (rid, from, amount, date, note) => wrap(() => finance.reserveTransferIn(rid, from, amount, date, note)),
-    reserveTransferOut: (rid, to, amount, date, note) => wrap(() => finance.reserveTransferOut(rid, to, amount, date, note)),
-    reserveAdjust: (rid, newAmount, date, note) => wrap(() => finance.reserveAdjust(rid, newAmount, date, note)),
+    reserveSetAmount: (rid, amount, date, note) => wrap(() => finance.reserveAdjust(rid, amount, date, note)),
     exportAll: () => finance.exportAll(),
     importAll: (file) => wrap(() => finance.importAll(file)),
     clearAllData: async () => {

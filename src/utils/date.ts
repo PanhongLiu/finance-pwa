@@ -53,6 +53,14 @@ export function daysUntil(iso: string): number {
   return Math.round((target - now) / 86400000)
 }
 
+/** 两个日期之间相隔的天数（b - a，整数，带符号；a 晚于 b 则为负） */
+export function daysBetween(startISO: string, endISO: string): number {
+  const a = parseISO(startISO).getTime()
+  const b = parseISO(endISO).getTime()
+  if (!isFinite(a) || !isFinite(b)) return 0
+  return Math.round((b - a) / 86400000)
+}
+
 /** 两个日期之间相隔的年数（用于存款利息计算）
  *  采用日历算法（年 + 月 + 日），避免闰年多出一天导致的误差，
  *  例如 2026-08-14 ~ 2029-08-14 精确为 3.0 年。 */

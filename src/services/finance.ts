@@ -247,15 +247,12 @@ export async function addDeposit(input: DepositInput): Promise<void> {
     annualRate: input.annualRate,
     startDate: input.startDate,
     endDate: input.endDate,
+    currentAmount: input.currentAmount ?? input.principal,
     note: input.note,
     createdAt: nowISO(),
     updatedAt: nowISO()
   }
-  // 资金从来源账户划出（内部记账，余额变动），不额外生成流水记录，避免重复展示
-  await withTx(['accounts', 'deposits'], 'readwrite', async (_, getStore) => {
-    if (input.sourceAccountId) {
-      await adjustWithin(getStore, { kind: 'account', id: input.sourceAccountId }, -input.principal)
-    }
+  await withTx(['deposits'], 'readwrite', async (_, getStore) => {
     getStore('deposits').put(deposit)
   })
 }
@@ -272,10 +269,10 @@ export async function updateDeposit(id: string, input: DepositInput): Promise<vo
     annualRate: input.annualRate,
     startDate: input.startDate,
     endDate: input.endDate,
+    currentAmount: input.currentAmount ?? existing.currentAmount,
     note: input.note,
     updatedAt: nowISO()
   }
-  // 仅修正字段，余额变动已在创建时处理；此处不再回滚账户（视为资产重估/补录）
   await withTx(['deposits'], 'readwrite', async (_, getStore) => {
     getStore('deposits').put(updated)
   })
@@ -300,16 +297,13 @@ export async function addInvestment(input: InvestmentInput): Promise<void> {
     realizedProfit: input.realizedProfit,
     unrealizedProfit: input.unrealizedProfit,
     fee: input.fee,
+    annualRate: input.annualRate ?? 0,
     purchaseDate: input.purchaseDate,
     note: input.note,
     createdAt: nowISO(),
     updatedAt: nowISO()
   }
-  // 资金从来源账户划出（内部记账，余额变动），不额外生成流水记录，避免重复展示
-  await withTx(['accounts', 'investments'], 'readwrite', async (_, getStore) => {
-    if (input.sourceAccountId) {
-      await adjustWithin(getStore, { kind: 'account', id: input.sourceAccountId }, -input.investedAmount)
-    }
+  await withTx(['investments'], 'readwrite', async (_, getStore) => {
     getStore('investments').put(inv)
   })
 }
@@ -327,6 +321,7 @@ export async function updateInvestment(id: string, input: InvestmentInput): Prom
     realizedProfit: input.realizedProfit,
     unrealizedProfit: input.unrealizedProfit,
     fee: input.fee,
+    annualRate: input.annualRate ?? existing.annualRate,
     purchaseDate: input.purchaseDate,
     note: input.note,
     updatedAt: nowISO()

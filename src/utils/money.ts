@@ -41,3 +41,9 @@ export function formatYuan(cents: number): string {
   const frac = abs % 100
   return `${negative ? '-' : ''}${thousands(String(yuan))}.${frac.toString().padStart(2, '0')}`
 }
+
+/** 百分比格式化，自动补正负号与 %，如 +2.35% / -1.20% / 0.00% */
+export function formatPercent(rate: number): string {
+  const sign = rate > 0 ? '+' : ''
+  return `${sign}${rate.toFixed(2)}%`
+}
