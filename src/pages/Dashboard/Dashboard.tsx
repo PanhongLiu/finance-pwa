@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { EmptyState } from '../../components/EmptyState'
+import { Icon } from '../../components/Icon'
 import { DoughnutChart } from '../../components/DoughnutChart'
 import { RecordForm } from './RecordForm'
 import { useFinance } from '../../store/FinanceContext'
@@ -30,7 +31,7 @@ export function Dashboard() {
       <>
         <PageHeader title="存款·理财工作台" />
         <div className="page">
-          <EmptyState icon="⏳" text="加载中…" />
+          <EmptyState icon={<Icon name="spinner" spin size={40} />} text="加载中…" />
         </div>
       </>
     )
@@ -42,7 +43,9 @@ export function Dashboard() {
         <PageHeader title="存款·理财工作台" />
         <div className="page">
           <div className="card error-card">
-            <div className="error-card__icon">⚠️</div>
+            <div className="error-card__icon">
+              <Icon name="alert" size={38} />
+            </div>
             <div className="error-card__title">数据加载失败</div>
             <div className="error-card__text">{error}</div>
             <button className="btn btn--primary" onClick={() => void reload()}>
@@ -64,7 +67,7 @@ export function Dashboard() {
         title="存款·理财工作台"
         right={
           <button className="app-header__action" onClick={() => navigate('/settings')} aria-label="设置">
-            ⚙️
+            <Icon name="settings" size={22} />
           </button>
         }
       />
@@ -80,53 +83,57 @@ export function Dashboard() {
           />
         </div>
 
-        {/* 存款汇总：分类环形图 + 月度趋势 */}
+        {/* 存款汇总：分类环形图 + 月度趋势（等高） */}
         <div className="card">
           <h3 className="card__title">存款汇总</h3>
           <div className="charts">
             <div className="chart-box">
               <div className="chart-box__title">月度存款趋势</div>
-              <div className="trend">
+              <div className="chart-box__body">
                 {trend.length === 0 ? (
                   <div className="empty" style={{ padding: '30px 0' }}>
                     暂无存款记录
                   </div>
                 ) : (
-                  trend.map((t) => (
-                    <div className="trend__col" key={t.month}>
-                      <div className="trend__bar" style={{ height: `${maxTrend > 0 ? (t.amount / maxTrend) * 100 : 0}%` }} />
-                      <div className="trend__label">{t.month.slice(2)}</div>
-                    </div>
-                  ))
+                  <div className="trend">
+                    {trend.map((t) => (
+                      <div className="trend__col" key={t.month}>
+                        <div className="trend__bar" style={{ height: `${maxTrend > 0 ? (t.amount / maxTrend) * 100 : 0}%` }} />
+                        <div className="trend__label">{t.month.slice(2)}</div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
             <div className="chart-box">
               <div className="chart-box__title">账户分布（按分类）</div>
-              {slices.length === 0 ? (
-                <div className="empty" style={{ padding: '30px 0' }}>
-                  暂无数据
-                </div>
-              ) : (
-                <>
-                  <DoughnutChart
-                    data={slices.map((s) => ({ label: s.label, value: s.value, color: s.color }))}
-                    centerLabel={formatCNY(portfolio.totalMarket)}
-                    centerSub="持仓总市值"
-                  />
-                  <div className="legend">
-                    {slices.map((s) => (
-                      <div className="legend__li" key={s.label}>
-                        <span className="legend__dot" style={{ background: s.color }} />
-                        <span className="legend__name">{s.label}</span>
-                        <span className="legend__amt">
-                          {formatCNY(s.value)} · {percent(s.value, portfolio.totalMarket).toFixed(0)}%
-                        </span>
-                      </div>
-                    ))}
+              <div className="chart-box__body">
+                {slices.length === 0 ? (
+                  <div className="empty" style={{ padding: '30px 0' }}>
+                    暂无数据
                   </div>
-                </>
-              )}
+                ) : (
+                  <>
+                    <DoughnutChart
+                      data={slices.map((s) => ({ label: s.label, value: s.value, color: s.color }))}
+                      centerLabel={formatCNY(portfolio.totalMarket)}
+                      centerSub="持仓总市值"
+                    />
+                    <div className="legend">
+                      {slices.map((s) => (
+                        <div className="legend__li" key={s.label}>
+                          <span className="legend__dot" style={{ background: s.color }} />
+                          <span className="legend__name">{s.label}</span>
+                          <span className="legend__amt">
+                            {formatCNY(s.value)} · {percent(s.value, portfolio.totalMarket).toFixed(0)}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -147,7 +154,12 @@ export function Dashboard() {
           </div>
         </div>
 
-        {savedToast && <div className="toast">已保存 ✓</div>}
+        {savedToast && (
+          <div className="toast">
+            <Icon name="check" size={15} style={{ verticalAlign: '-2px', marginRight: 4 }} />
+            已保存
+          </div>
+        )}
       </div>
     </>
   )

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
 import { EmptyState } from '../../components/EmptyState'
+import { Icon } from '../../components/Icon'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { Sheet } from '../../components/Sheet'
 import { useFinance } from '../../store/FinanceContext'
@@ -299,10 +300,10 @@ export function AssetsPage() {
                         <td>
                           <div className="row-ops">
                             <button className="iconbtn" title="更新金额" onClick={() => { setEditId(p.id); setEAmount(formatYuan(p.amount)); setEDeposit('0'); setEDate(p.date) }}>
-                              ✎
+                              <Icon name="pen" size={16} />
                             </button>
                             <button className="iconbtn iconbtn--red" title="删除" onClick={() => setDeleteTarget(p.id)}>
-                              🗑
+                              <Icon name="trash" size={16} />
                             </button>
                           </div>
                         </td>

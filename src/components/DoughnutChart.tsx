@@ -75,9 +75,20 @@ export function DoughnutChart({
   const hasData = data.some((d) => d.value !== 0)
 
   return (
-    <div className="chart-wrap" style={{ position: 'relative' }}>
-      <div style={{ position: 'relative', width: 220, height: 220 }}>
-        <canvas ref={canvasRef} className="doughnut-canvas" />
+    <div
+      className="chart-wrap"
+      style={{
+        position: 'relative',
+        flex: '1 1 0',
+        minHeight: 0,
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <div style={{ position: 'relative', width: 'min(100%, 210px)', height: 'min(100%, 210px)' }}>
+        <canvas ref={canvasRef} className="doughnut-canvas" style={{ width: '100%', height: '100%' }} />
         {hasData && (
           <div
             style={{

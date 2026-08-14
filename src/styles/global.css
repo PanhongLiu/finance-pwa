@@ -69,6 +69,12 @@ textarea {
   flex-direction: column;
   position: relative;
 }
+.app-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
 
 .page {
   flex: 1;
@@ -107,6 +113,9 @@ textarea {
   padding: 6px;
   min-width: 36px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ---------- 底部 Tab ---------- */
@@ -144,6 +153,9 @@ textarea {
 .tab-bar__icon {
   font-size: 22px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .tab-bar__label {
   line-height: 1.1;
@@ -864,31 +876,43 @@ textarea {
   background: #fef2f2;
 }
 
-/* 存款汇总：双图布局 */
+/* 存款汇总：双图布局（等高） */
 .charts {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
+  align-items: stretch;
 }
 .chart-box {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  min-height: 170px;
+  height: 300px;
 }
 .chart-box__title {
   font-size: 12.5px;
   color: var(--muted);
   margin-bottom: 8px;
   text-align: center;
+  flex: none;
+}
+.chart-box__body {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 /* 月度趋势条 */
 .trend {
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
-  height: 140px;
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
   gap: 6px;
 }
@@ -1178,6 +1202,9 @@ textarea {
   .charts {
     grid-template-columns: 1fr;
   }
+  .chart-box {
+    height: 240px;
+  }
   .detail-table {
     min-width: 560px;
   }
@@ -1185,5 +1212,69 @@ textarea {
     width: 32px;
     height: 32px;
     font-size: 14px;
+  }
+}
+
+/* 图标旋转动画 */
+@keyframes icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 电脑 / iPad 适配：宽容器 + 左侧竖排导航 */
+@media (min-width: 768px) {
+  .app-shell {
+    flex-direction: row;
+    max-width: 1040px;
+  }
+  .app-main {
+    flex: 1;
+    min-height: 0;
+  }
+  .page {
+    padding: 24px 32px 32px;
+  }
+  .tab-bar {
+    order: -1;
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    width: 220px;
+    height: 100vh;
+    flex-direction: column;
+    border-top: none;
+    border-right: 0.5px solid var(--border);
+    padding-bottom: 0;
+    background: var(--card);
+    z-index: 20;
+  }
+  .tab-bar__item {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 0 18px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+  .tab-bar__item--active {
+    background: var(--primary-soft);
+  }
+  .tab-bar__label {
+    font-size: 14px;
+  }
+  .tab-bar__icon {
+    font-size: 20px;
+  }
+  .fab {
+    right: max(16px, calc(50% - 1040px / 2 + 16px));
+  }
+  .toast {
+    bottom: 24px;
+  }
+  .chart-box {
+    height: 300px;
   }
 }
