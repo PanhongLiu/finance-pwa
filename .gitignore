@@ -1,6 +1,8 @@
 node_modules
 dist
 dist-ssr
+dist_bak
+tmp
 *.local
 .DS_Store
 _unused_*
