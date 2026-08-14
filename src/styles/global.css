@@ -160,6 +160,19 @@ textarea {
 .tab-bar__label {
   line-height: 1.1;
 }
+/* 移动端：品牌头/底栏/分组标签隐藏，导航区横向铺满 */
+.tab-bar__brand,
+.tab-bar__footer {
+  display: none;
+}
+.tab-bar__nav {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+}
+.tab-bar__group-label {
+  display: none;
+}
 
 /* ---------- 卡片 ---------- */
 .card {
@@ -1242,31 +1255,117 @@ textarea {
     bottom: auto;
     left: auto;
     transform: none;
-    width: 220px;
+    width: 240px;
     height: 100vh;
     flex-direction: column;
     border-top: none;
     border-right: 0.5px solid var(--border);
-    padding-bottom: 0;
+    padding: 0 14px;
     background: var(--card);
+    box-shadow: 2px 0 16px rgba(20, 60, 50, 0.05);
     z-index: 20;
+  }
+  .tab-bar__nav {
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 4px;
+  }
+  .tab-bar__group-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--muted-2);
+    padding: 16px 14px 6px;
+  }
+  .tab-bar__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 22px 12px 18px;
+  }
+  .tab-bar__logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #14b8a6, #5eead4);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(20, 184, 166, 0.35);
+    flex: none;
+  }
+  .tab-bar__brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+  .tab-bar__brand-name {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+  }
+  .tab-bar__brand-sub {
+    font-size: 12px;
+    color: var(--muted);
   }
   .tab-bar__item {
     flex-direction: row;
     justify-content: flex-start;
     gap: 12px;
-    padding: 0 18px;
-    font-size: 14px;
-    border-radius: 10px;
+    padding: 0 12px;
+    height: 46px;
+    font-size: 14.5px;
+    border-radius: 12px;
+    margin: 3px 0;
+    transition: background 0.18s ease;
+  }
+  .tab-bar__item:hover {
+    background: var(--card-2);
   }
   .tab-bar__item--active {
     background: var(--primary-soft);
   }
-  .tab-bar__label {
-    font-size: 14px;
+  .tab-bar__item--active:hover {
+    background: var(--primary-soft);
   }
   .tab-bar__icon {
-    font-size: 20px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--card-2);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+  .tab-bar__item--active .tab-bar__icon {
+    background: var(--primary);
+    color: #fff;
+  }
+  .tab-bar__item--active .tab-bar__label {
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .tab-bar__footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 18px;
+    padding: 11px 13px;
+    background: var(--card-2);
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  .tab-bar__footer-icon {
+    color: var(--primary);
+    display: flex;
+    flex: none;
   }
   .fab {
     right: max(16px, calc(50% - 1040px / 2 + 16px));

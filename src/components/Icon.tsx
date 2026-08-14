@@ -13,6 +13,7 @@ export type IconName =
   | 'close'
   | 'download'
   | 'upload'
+  | 'shield'
 
 const PATHS: Record<IconName, ReactNode> = {
   pen: (
@@ -88,6 +89,12 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M12 21V9" />
       <path d="M7 13l5-5 5 5" />
       <path d="M4 4h16" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6Z" />
+      <path d="M9 12l2 2 4-4" />
     </>
   )
 }
