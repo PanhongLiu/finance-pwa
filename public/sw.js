@@ -1,14 +1,18 @@
 // 极简 Service Worker：保证 PWA 可安装、可离线使用。
 // 策略：导航请求网络优先、失败回退缓存；静态资源缓存优先并在命中后回填缓存。
-const CACHE = 'pf-cache-v1'
+// 适配任意子路径（如 GitHub Pages 的 /finance-pwa/），不使用以 "/" 开头的绝对路径。
+
+// 根据 sw.js 自身位置推导站点基础路径，例如 /finance-pwa/
+const BASE = self.location.pathname.replace(/sw\.js$/, '')
+const CACHE = 'pf-cache-v2'
 const PRECACHE = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/favicon.svg',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png'
+  BASE,
+  BASE + 'index.html',
+  BASE + 'manifest.webmanifest',
+  BASE + 'favicon.svg',
+  BASE + 'icon-192.png',
+  BASE + 'icon-512.png',
+  BASE + 'apple-touch-icon.png'
 ]
 
 self.addEventListener('install', (event) => {
@@ -41,10 +45,10 @@ self.addEventListener('fetch', (event) => {
       fetch(req)
         .then((res) => {
           const copy = res.clone()
-          caches.open(CACHE).then((c) => c.put('/index.html', copy))
+          caches.open(CACHE).then((c) => c.put(req.url, copy))
           return res
         })
-        .catch(() => caches.match('/index.html').then((m) => m || caches.match('/')))
+        .catch(() => caches.match(req.url).then((m) => m || caches.match(BASE + 'index.html')))
     )
     return
   }

@@ -71,3 +71,14 @@ git add -A && git commit -m "更新说明" && git push
 ```
 
 GitHub Actions 会自动重新构建发布，无需手动操作。
+
+## 部署失败排查（实战踩坑）
+
+如果 Actions 里 `Deploy to GitHub Pages` 的 **deploy** 步骤报 `Failed to create deployment (status: 404) ... Ensure GitHub Pages has been enabled`，通常是以下原因之一：
+
+1. **仓库是私有的**：GitHub 免费账号的**私有仓库不支持 Pages**。  
+   → 解决办法：仓库 **Settings → 拉到最下面 Danger Zone → Change visibility → 改为 Public（公开）**。
+2. **Pages 还没开启**：进入仓库 **Settings → Pages**，Source 选 **GitHub Actions**，保存。
+3. **推送令牌权限不足**：生成 Personal Access Token 时除了 `repo`，还要勾选 `workflow`（工作流权限），否则推不上去。
+
+改完对应设置后，到 **Actions** 标签页找到失败的那次运行，点 **Re-run all jobs** 重新跑即可，无需重新推送。
