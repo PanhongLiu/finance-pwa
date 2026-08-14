@@ -12,6 +12,7 @@ import type {
   ReserveGoal,
   Settings
 } from '../types'
+import { normalizeCategory } from '../types'
 import { withTx, getAll, reqToPromise } from '../db/database'
 import { getSettings, saveSettings } from '../db/settings'
 import { uid, nowISO } from '../utils/id'
@@ -33,15 +34,17 @@ export async function loadAll(): Promise<AllData> {
     getAll<ReserveGoal>('goals'),
     getAll<DepositRecord>('records')
   ])
-  return { positions, goals, records }
+  // 归一化旧数据中的分类（定期存款→定期 等），保证展示与配色一致
+  const normPositions = positions.map((p) => ({ ...p, category: normalizeCategory(p.category) }))
+  return { positions: normPositions, goals, records }
 }
 
 // ----------------- 初始化 / 迁移 / 种子 -----------------
 
 function categoryOfDeposit(type: string): PositionCategory {
   if (type.includes('理财')) return '理财'
-  if (type === '活期存款' || type === '其他存款') return '其他'
-  return '定期存款' // 定期存款 / 大额存单 等
+  if (type === '活期存款' || type === '其他存款') return '活期+'
+  return '定期' // 定期存款 / 大额存单 等
 }
 
 /** 将旧版 deposits / investments / reserveFunds 迁移为统一模型，保留用户既有数据 */
@@ -168,7 +171,7 @@ export async function seedIfEmpty(): Promise<void> {
   const now = Date.now()
   const seedPositions: Position[] = [
     {
-      id: uid(), project: '旅游基金', category: '定期存款', app: '工商银行',
+      id: uid(), project: '旅游基金', category: '定期', app: '工商银行',
       amount: 800000, prevAmount: 0, lastGain: 0, gainType: 'base',
       date: '2026-08-05', prevDate: '2026-08-05', note: '', expiry: '', ts: now, lastDeposit: 0
     },
@@ -192,7 +195,7 @@ export async function seedIfEmpty(): Promise<void> {
     { id: uid(), date: '2026-06-01', category: '理财', project: '稳健理财A', app: '支付宝', amount: 1000000, note: '', ts: now },
     { id: uid(), date: '2026-06-15', category: '理财', project: '基金定投', app: '天天基金', amount: 500000, note: '', ts: now },
     { id: uid(), date: '2026-07-20', category: '其他', project: '应急金', app: '现金', amount: 500000, note: '', ts: now },
-    { id: uid(), date: '2026-08-05', category: '定期存款', project: '旅游基金', app: '工商银行', amount: 800000, note: '', ts: now }
+    { id: uid(), date: '2026-08-05', category: '定期', project: '旅游基金', app: '工商银行', amount: 800000, note: '', ts: now }
   ]
   const seedGoals: ReserveGoal[] = [
     { id: uid(), name: '旅游基金', target: 2000000, deadline: '2026-08-20', log: [{ date: '2026-08-05', amount: 800000 }], ts: now },

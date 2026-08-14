@@ -190,15 +190,31 @@ export const ASSET_COLORS = {
 // ===================== 统一持仓模型（存款 / 理财 / 其他） =====================
 // 同一「项目 + 分类」合并为一行；金额以整数分存储。
 
-export type PositionCategory = '定期存款' | '理财' | '其他'
+export type PositionCategory = '定期' | '活期+' | '理财' | '其他'
 
-export const POSITION_CATEGORIES: PositionCategory[] = ['定期存款', '理财', '其他']
+export const POSITION_CATEGORIES: PositionCategory[] = ['定期', '活期+', '理财', '其他']
 
-/** 分类配色（清新主题：薄荷绿 / 暖橙 / 天青） */
+/** 分类配色（清新主题：薄荷绿 / 天青 / 暖橙 / 柔紫） */
 export const CATEGORY_COLORS: Record<string, string> = {
-  定期存款: '#14b8a6',
+  定期: '#14b8a6',
+  '活期+': '#38bdf8',
   理财: '#f59e0b',
-  其他: '#38bdf8'
+  其他: '#a78bfa'
+}
+
+/** 兼容旧数据 / 外部表头的分类归一化：定期存款→定期，活期/活期存款→活期+，其余保留或归为其他 */
+const CATEGORY_ALIASES: Record<string, PositionCategory> = {
+  定期存款: '定期',
+  定期: '定期',
+  活期: '活期+',
+  活期存款: '活期+',
+  其他存款: '活期+',
+  '活期+': '活期+',
+  理财: '理财',
+  其他: '其他'
+}
+export function normalizeCategory(c: string): PositionCategory {
+  return CATEGORY_ALIASES[(c || '').trim()] ?? '其他'
 }
 
 /** 持仓：存款 / 理财 / 其他 的统一记录 */

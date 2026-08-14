@@ -79,7 +79,7 @@ textarea {
 .page {
   flex: 1;
   padding: 12px 16px calc(var(--tab-h) + var(--safe-bottom) + 24px);
-  padding-top: calc(var(--safe-top) + 4px);
+  padding-top: 4px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }

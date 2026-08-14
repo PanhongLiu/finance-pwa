@@ -25,10 +25,10 @@ function TabBar() {
         <span className="tab-bar__logo">
           <Icon name="wallet" size={22} />
         </span>
-        <span className="tab-bar__brand-text">
-          <span className="tab-bar__brand-name">存款·理财</span>
-          <span className="tab-bar__brand-sub">工作台</span>
-        </span>
+          <span className="tab-bar__brand-text">
+            <span className="tab-bar__brand-name">搞钱</span>
+            <span className="tab-bar__brand-sub">存款·理财</span>
+          </span>
       </div>
 
       <div className="tab-bar__nav">

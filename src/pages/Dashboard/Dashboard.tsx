@@ -29,7 +29,7 @@ export function Dashboard() {
   if (loading) {
     return (
       <>
-        <PageHeader title="存款·理财工作台" />
+        <PageHeader title="搞钱" />
         <div className="page">
           <EmptyState icon={<Icon name="spinner" spin size={40} />} text="加载中…" />
         </div>
@@ -40,7 +40,7 @@ export function Dashboard() {
   if (error) {
     return (
       <>
-        <PageHeader title="存款·理财工作台" />
+        <PageHeader title="搞钱" />
         <div className="page">
           <div className="card error-card">
             <div className="error-card__icon">
@@ -64,7 +64,7 @@ export function Dashboard() {
   return (
     <>
       <PageHeader
-        title="存款·理财工作台"
+        title="搞钱"
         right={
           <button className="app-header__action" onClick={() => navigate('/settings')} aria-label="设置">
             <Icon name="settings" size={22} />

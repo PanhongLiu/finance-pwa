@@ -1,6 +1,6 @@
 {
-  "name": "个人存款与理财工作台",
-  "short_name": "理财工作台",
+  "name": "搞钱",
+  "short_name": "搞钱",
   "description": "本地存储的个人存款与理财管理工具，数据不上传、不联网。",
   "lang": "zh-CN",
   "theme_color": "#14b8a6",

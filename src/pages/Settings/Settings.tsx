@@ -111,7 +111,7 @@ export function SettingsPage() {
         <div className="card">
           <h3 className="card__title">关于</h3>
           <p className="muted" style={{ fontSize: 14, lineHeight: 1.6 }}>
-            个人存款与理财工作台是一个本地优先的轻量级财务 App。所有数据仅保存在你的设备本地（IndexedDB），
+            搞钱是一个本地优先的轻量级财务 App。所有数据仅保存在你的设备本地（IndexedDB），
             不登录、不联网、不上传，也不接入任何银行或证券账户。
           </p>
         </div>

@@ -10,6 +10,7 @@ import { fmtMonthDay, parseDate, todayISO } from '../../utils/date'
 import { annualized, type PortfolioSummary } from '../../services/calc'
 import { importPositionsWithRecords } from '../../services/finance'
 import type { Position } from '../../types'
+import { normalizeCategory } from '../../types'
 
 type SortKey = 'project' | 'category' | 'app' | 'amount' | 'expiry' | 'gain' | 'ann' | 'date'
 type SortDir = 'asc' | 'desc'
@@ -123,7 +124,7 @@ export function AssetsPage() {
     category: ['分类', '类型', '类别', 'category', 'type'],
     app: ['app', '平台', '账户', '银行', '渠道', 'bank'],
     amount: ['当前金额', '金额', '本金', '余额', '市值', 'amount', 'principal', 'value', '现值'],
-    expiry: ['到期时间', '到期', '到期日', 'end', 'maturity', 'deadline'],
+    expiry: ['到期时间', '到期日期', '到期', '到期日', '到期时点', '赎回日', '赎回日期', '结束日期', 'end', 'enddate', 'maturity', 'maturitydate', 'duedate', 'deadline'],
     gain: ['距上次收益', '收益', '利息', 'gain', 'profit'],
     date: ['更新日期', '日期', '时间', '存入日期', '记录日期', '记账日期', 'date', 'datetime', 'time']
   }
@@ -184,12 +185,13 @@ export function AssetsPage() {
       const gain = gainRaw !== '' && gainRaw != null ? parseAmountCents(gainRaw) : 0
       const rawDate = idx.date != null ? cells[idx.date] : ''
       const date = (rawDate && parseDate(rawDate)) || todayISO()
-      const expiry = (idx.expiry != null ? cells[idx.expiry] : '')?.trim() ?? ''
+      const expiryRaw = (idx.expiry != null ? cells[idx.expiry] : '')?.trim() ?? ''
+      const expiry = expiryRaw ? parseDate(expiryRaw) || expiryRaw : ''
       const app = (idx.app != null ? cells[idx.app] : '')?.trim() ?? ''
       out.push({
         id: 'imp-' + now + '-' + i,
         project: proj,
-        category: (['定期存款', '理财', '其他'].includes(cat) ? cat : '其他') as Position['category'],
+        category: normalizeCategory(cat) as Position['category'],
         app,
         amount: amt,
         prevAmount: amt - (gain > 0 ? gain : 0),
@@ -437,7 +439,7 @@ export function AssetsPage() {
 }
 
 function catColor(cat: string): string {
-  const map: Record<string, string> = { 定期存款: '#2563eb', 理财: '#f59e0b', 其他: '#10b981' }
+  const map: Record<string, string> = { 定期: '#14b8a6', '活期+': '#38bdf8', 理财: '#f59e0b', 其他: '#a78bfa' }
   return map[cat] || '#94a3b8'
 }
 
