@@ -1,5 +1,10 @@
 # 发布到 GitHub Pages（永久免费地址）
 
+> ⚠️ **请用 Git Bash 执行下面的命令，不要用 PowerShell。**
+> 在 PowerShell 里会报"git 无法识别"——因为 git 没加进 PowerShell 的 PATH。
+> 开始菜单搜索 **Git Bash** 打开即可（git 在那里能直接用）。
+> Git Bash 里路径用斜杠，例如：`cd /c/Users/liupanhong/WorkBuddy/2026-08-14-11-19-59`
+
 本项目的源码已经初始化为 Git 仓库，并配置好 GitHub Actions 自动发布工作流  
 （`.github/workflows/deploy.yml`）。你只需要在**自己的电脑**上把代码推到 GitHub，  
 即可获得一个长期稳定、自动 HTTPS 的地址：`https://<你的GitHub用户名>.github.io/<仓库名>/`
