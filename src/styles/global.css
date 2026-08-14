@@ -1256,12 +1256,12 @@ textarea {
     bottom: auto;
     left: auto;
     transform: none;
-    width: 160px;
+    width: 210px;
     height: 100vh;
     flex-direction: column;
     border-top: none;
     border-right: 0.5px solid var(--border);
-    padding: 0 8px;
+    padding: 0 12px;
     background: var(--card);
     box-shadow: 2px 0 16px rgba(20, 60, 50, 0.05);
     z-index: 20;
@@ -1283,19 +1283,19 @@ textarea {
   .tab-bar__brand {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 16px 8px 12px;
+    gap: 11px;
+    padding: 22px 12px 18px;
   }
   .tab-bar__logo {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
     background: linear-gradient(135deg, #14b8a6, #5eead4);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.35);
+    box-shadow: 0 6px 16px rgba(20, 184, 166, 0.35);
     flex: none;
   }
   .tab-bar__brand-text {
@@ -1304,24 +1304,24 @@ textarea {
     line-height: 1.15;
   }
   .tab-bar__brand-name {
-    font-size: 14px;
+    font-size: 17px;
     font-weight: 800;
     letter-spacing: 0.2px;
   }
   .tab-bar__brand-sub {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--muted);
   }
   .tab-bar__item {
     flex: none;
     flex-direction: row;
     justify-content: flex-start;
-    gap: 8px;
-    padding: 0 8px;
-    height: 28px;
-    font-size: 13px;
-    border-radius: 8px;
-    margin: 1px 0;
+    gap: 11px;
+    padding: 0 12px;
+    height: 42px;
+    font-size: 14.5px;
+    border-radius: 10px;
+    margin: 2px 0;
     transition: background 0.18s ease;
   }
   .tab-bar__item:hover {
@@ -1334,9 +1334,9 @@ textarea {
     background: var(--primary-soft);
   }
   .tab-bar__icon {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
     background: var(--card-2);
     color: var(--muted);
     display: flex;

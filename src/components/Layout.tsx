@@ -23,7 +23,7 @@ function TabBar() {
     <nav className="tab-bar">
       <div className="tab-bar__brand">
         <span className="tab-bar__logo">
-          <Icon name="wallet" size={18} />
+          <Icon name="wallet" size={22} />
         </span>
         <span className="tab-bar__brand-text">
           <span className="tab-bar__brand-name">存款·理财</span>
@@ -41,7 +41,7 @@ function TabBar() {
             className={({ isActive }) => `tab-bar__item${isActive ? ' tab-bar__item--active' : ''}`}
           >
             <span className="tab-bar__icon">
-              <Icon name={t.icon} size={16} />
+              <Icon name={t.icon} size={18} />
             </span>
             <span className="tab-bar__label">{t.label}</span>
           </NavLink>
@@ -50,7 +50,7 @@ function TabBar() {
 
       <div className="tab-bar__footer">
         <span className="tab-bar__footer-icon">
-          <Icon name="shield" size={13} />
+          <Icon name="shield" size={15} />
         </span>
         <span className="tab-bar__footer-text">数据本地存储 · 安全私密</span>
       </div>
