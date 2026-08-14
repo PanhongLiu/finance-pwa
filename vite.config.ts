@@ -10,6 +10,8 @@ export default defineConfig({
     port: 5173
   },
   build: {
-    target: 'es2018'
+    target: 'es2018',
+    // 该环境 Vite 的 emptyOutDir 会调用被拦截的「回收站」删除导致构建失败；改为手动 rm dist 后再构建
+    emptyOutDir: false
   }
 })

@@ -22,7 +22,7 @@ function Metric({ label, value, sub, positive }: { label: string; value: string;
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const { portfolio, records, loading } = useFinance()
+  const { portfolio, records, loading, error, reload } = useFinance()
   const [savedToast, setSavedToast] = useState(false)
 
   if (loading) {
@@ -31,6 +31,24 @@ export function Dashboard() {
         <PageHeader title="存款·理财工作台" />
         <div className="page">
           <EmptyState icon="⏳" text="加载中…" />
+        </div>
+      </>
+    )
+  }
+
+  if (error) {
+    return (
+      <>
+        <PageHeader title="存款·理财工作台" />
+        <div className="page">
+          <div className="card error-card">
+            <div className="error-card__icon">⚠️</div>
+            <div className="error-card__title">数据加载失败</div>
+            <div className="error-card__text">{error}</div>
+            <button className="btn btn--primary" onClick={() => void reload()}>
+              重试
+            </button>
+          </div>
         </div>
       </>
     )

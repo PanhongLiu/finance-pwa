@@ -4,7 +4,9 @@
 // 所有 UI 只能通过本文件及 db/*.ts 暴露的函数访问 IndexedDB，禁止直接操作底层。
 
 export const DB_NAME = 'personal_finance_db'
-export const DB_VERSION = 1
+// 升到 2：旧库（v1）升级时触发 onupgradeneeded，补齐 positions/goals/records 三个新对象仓库，
+// 否则 migrateLegacy 读取缺失的 store 会抛错、导致首页永远「加载中」。
+export const DB_VERSION = 2
 
 const STORE_NAMES = [
   'accounts',

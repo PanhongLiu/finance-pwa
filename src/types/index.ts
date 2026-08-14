@@ -194,11 +194,11 @@ export type PositionCategory = '定期存款' | '理财' | '其他'
 
 export const POSITION_CATEGORIES: PositionCategory[] = ['定期存款', '理财', '其他']
 
-/** 分类配色（与界面主题一致） */
+/** 分类配色（清新主题：薄荷绿 / 暖橙 / 天青） */
 export const CATEGORY_COLORS: Record<string, string> = {
-  定期存款: '#2563eb',
+  定期存款: '#14b8a6',
   理财: '#f59e0b',
-  其他: '#10b981'
+  其他: '#38bdf8'
 }
 
 /** 持仓：存款 / 理财 / 其他 的统一记录 */

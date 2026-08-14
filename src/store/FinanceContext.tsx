@@ -6,11 +6,12 @@ import { computePortfolio, type PortfolioSummary } from '../services/calc'
 
 interface FinanceContextValue {
   loading: boolean
+  error: string | null
+  reload: () => Promise<void>
   positions: Position[]
   goals: ReserveGoal[]
   records: DepositRecord[]
   portfolio: PortfolioSummary
-  reload: () => Promise<void>
   // 记一笔
   addRecord: (i: RecordInput) => Promise<void>
   // 持仓
@@ -30,6 +31,7 @@ const FinanceContext = createContext<FinanceContextValue | null>(null)
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<AllData>({ positions: [], goals: [], records: [] })
 
   const reload = useCallback(async () => {
@@ -40,12 +42,20 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
     ;(async () => {
-      await finance.migrateLegacy()
-      await finance.seedIfEmpty()
-      const d = await finance.loadAll()
-      if (mounted) {
-        setData(d)
-        setLoading(false)
+      try {
+        await finance.migrateLegacy()
+        await finance.seedIfEmpty()
+        const d = await finance.loadAll()
+        if (mounted) {
+          setData(d)
+          setError(null)
+        }
+      } catch (e) {
+        console.error('[FinanceContext] 数据加载失败', e)
+        if (mounted) setError(e instanceof Error ? e.message : '数据加载失败')
+      } finally {
+        // 无论成功或失败都结束加载，避免首页永远显示「加载中」
+        if (mounted) setLoading(false)
       }
     })()
     return () => {
@@ -62,6 +72,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const value: FinanceContextValue = {
     loading,
+    error,
     positions: data.positions,
     goals: data.goals,
     records: data.records,
